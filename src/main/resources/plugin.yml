@@ -1,0 +1,7 @@
+name: CasinoPlugin
+version: 1.0.0
+main: com.aidean.casinoplugin.CasinoPlugin
+api-version: 1.21
+author: aidean
+description: A Minecraft casino plugin with Blackjack and Baccarat games
+depend: [Vault]
