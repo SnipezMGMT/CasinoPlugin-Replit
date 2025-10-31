@@ -5,3 +5,13 @@ api-version: '1.20'
 author: aidean
 description: A Minecraft casino plugin with Blackjack and Baccarat games
 depend: [Vault]
+
+commands:
+  blackjack:
+    description: Play blackjack
+    usage: /blackjack [play <bet>|rules]
+    aliases: [bj]
+  baccarat:
+    description: Play baccarat
+    usage: /baccarat [play <player|banker|tie> <bet>|rules]
+    aliases: [bc]
