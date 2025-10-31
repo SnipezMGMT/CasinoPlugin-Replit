@@ -49,6 +49,8 @@ public class Baccarat {
         playerHand.add(deck.draw());
         bankerHand.add(deck.draw());
 
+        GUIManager.openBaccaratGUI(player, this);
+        
         player.sendMessage("§bPlayer's hand: " + formatHand(playerHand) + " §7(" + getHandValue(playerHand) + ")");
         player.sendMessage("§cBanker's hand: " + formatHand(bankerHand) + " §7(" + getHandValue(bankerHand) + ")");
 
@@ -56,7 +58,13 @@ public class Baccarat {
         int bankerValue = getHandValue(bankerHand);
 
         if (playerValue >= 8 || bankerValue >= 8) {
-            determineWinner();
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    player.closeInventory();
+                    determineWinner();
+                }
+            }.runTaskLater(plugin, 40L);
             return;
         }
 
@@ -78,6 +86,7 @@ public class Baccarat {
             playerThirdCard = deck.draw();
             playerHand.add(playerThirdCard);
             player.sendMessage("§bPlayer draws: " + playerThirdCard);
+            GUIManager.updateBaccaratGUI(player, this);
             playerValue = getHandValue(playerHand);
         } else {
             player.sendMessage("§bPlayer stands with " + playerValue);
@@ -111,6 +120,7 @@ public class Baccarat {
                 Card bankerThirdCard = deck.draw();
                 bankerHand.add(bankerThirdCard);
                 player.sendMessage("§cBanker draws: " + bankerThirdCard);
+                GUIManager.updateBaccaratGUI(player, this);
             } else {
                 player.sendMessage("§cBanker stands with " + bankerValue);
             }
@@ -119,9 +129,10 @@ public class Baccarat {
         new BukkitRunnable() {
             @Override
             public void run() {
+                player.closeInventory();
                 determineWinner();
             }
-        }.runTaskLater(plugin, 20L);
+        }.runTaskLater(plugin, 40L);
     }
 
     private void determineWinner() {
@@ -187,11 +198,27 @@ public class Baccarat {
         return sb.toString();
     }
 
-    private int getHandValue(List<Card> hand) {
+    public int getHandValue(List<Card> hand) {
         int value = 0;
         for (Card card : hand) {
             value += card.getValue();
         }
         return value % 10;
+    }
+    
+    public List<Card> getPlayerHand() {
+        return playerHand;
+    }
+    
+    public List<Card> getBankerHand() {
+        return bankerHand;
+    }
+    
+    public double getBet() {
+        return bet;
+    }
+    
+    public String getBetType() {
+        return betType;
     }
 }

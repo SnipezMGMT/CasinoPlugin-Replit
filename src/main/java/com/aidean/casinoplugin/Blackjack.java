@@ -9,10 +9,13 @@ import java.util.List;
 public class Blackjack {
     private final CasinoPlugin plugin;
     private final Player player;
-    private final double bet;
+    private double bet;
     private final Deck deck;
     private final List<Card> playerHand;
     private final List<Card> dealerHand;
+    private boolean hideDealer;
+    private double insuranceBet;
+    private double perfectPairsBet;
 
     public Blackjack(CasinoPlugin plugin, Player player, double bet) {
         this.plugin = plugin;
@@ -21,6 +24,9 @@ public class Blackjack {
         this.deck = new Deck();
         this.playerHand = new ArrayList<>();
         this.dealerHand = new ArrayList<>();
+        this.hideDealer = true;
+        this.insuranceBet = 0;
+        this.perfectPairsBet = 0;
     }
 
     public void start() {
@@ -64,6 +70,7 @@ public class Blackjack {
     public void hit() {
         playerHand.add(deck.draw());
         displayHands(true);
+        GUIManager.updateBlackjackGUI(player, this);
 
         int playerValue = getHandValue(playerHand);
         if (playerValue > 21) {
@@ -72,13 +79,40 @@ public class Blackjack {
             endGame();
         } else if (playerValue == 21) {
             stand();
-        } else {
-            GUIManager.openBlackjackGUI(player, this);
         }
+    }
+    
+    public void doubleDown() {
+        if (!canDoubleDown()) {
+            player.sendMessage("§cCannot double down!");
+            return;
+        }
+        
+        EconomyResponse response = plugin.getEconomy().withdrawPlayer(player, bet);
+        if (!response.transactionSuccess()) {
+            player.sendMessage("§cFailed to double down: " + response.errorMessage);
+            return;
+        }
+        
+        bet *= 2;
+        player.sendMessage("§6Doubled down! New bet: $" + String.format("%.2f", bet));
+        
+        playerHand.add(deck.draw());
+        displayHands(true);
+        GUIManager.updateBlackjackGUI(player, this);
+        player.sendMessage("§7Drew: " + playerHand.get(playerHand.size() - 1));
+        
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                stand();
+            }
+        }.runTaskLater(plugin, 20L);
     }
 
     public void stand() {
         player.closeInventory();
+        hideDealer = false;
         player.sendMessage("§eYou stand with " + getHandValue(playerHand));
         
         new BukkitRunnable() {
@@ -90,6 +124,7 @@ public class Blackjack {
     }
 
     private void dealerPlay() {
+        hideDealer = false;
         displayHands(false);
         
         while (getHandValue(dealerHand) < 17) {
@@ -156,7 +191,27 @@ public class Blackjack {
         return sb.toString();
     }
 
-    private int getHandValue(List<Card> hand) {
+    public Player getPlayer() {
+        return player;
+    }
+    
+    public List<Card> getPlayerHand() {
+        return playerHand;
+    }
+    
+    public List<Card> getDealerHand() {
+        return dealerHand;
+    }
+    
+    public double getBet() {
+        return bet;
+    }
+    
+    public boolean isHidingDealer() {
+        return hideDealer;
+    }
+    
+    public int getHandValue(List<Card> hand) {
         int value = 0;
         int aces = 0;
 
@@ -174,8 +229,12 @@ public class Blackjack {
 
         return value;
     }
-
-    public Player getPlayer() {
-        return player;
+    
+    public int getCardValue(Card card) {
+        return card.getValue();
+    }
+    
+    public boolean canDoubleDown() {
+        return playerHand.size() == 2 && plugin.getEconomy().getBalance(player) >= bet;
     }
 }
